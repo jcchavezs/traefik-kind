@@ -15,3 +15,10 @@ curl http://localhost
 # Denied request:
 curl http://localhost/status/403
 ```
+
+Once you are done you can cleanup the environment running `make cleanup`.
+
+## Requirements
+
+- kind
+- kubectl
