@@ -1,0 +1,127 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: zipkin
+  namespace: ${TRAEFIK_NAMESPACE}
+  labels:
+    app: zipkin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zipkin
+  template:
+    metadata:
+      labels:
+        app: zipkin
+    spec:
+      containers:
+        - name: zipkin
+          image: openzipkin/zipkin
+          ports:
+            - name: web
+              containerPort: 9411
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zipkin
+  namespace: ${TRAEFIK_NAMESPACE}
+spec:
+  ports:
+    - name: web
+      port: 9411
+      targetPort: web
+  selector:
+    app: zipkin
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: zipkin-ingress
+  namespace: ${TRAEFIK_NAMESPACE}
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /zipkin
+            pathType: Prefix
+            backend:
+              service:
+                name: zipkin
+                port:
+                  name: web
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otelcollector-config
+  namespace: ${TRAEFIK_NAMESPACE}
+data:
+  config.yaml: |
+    receivers:
+      otlp: # the OTLP receiver the app is sending traces to
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+
+    processors:
+      batch:
+
+    exporters:
+      zipkin:
+        endpoint: http://zipkin:9411/api/v2/spans
+
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [zipkin]
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: otelcollector
+  namespace: ${TRAEFIK_NAMESPACE}
+  labels:
+    app: otelcollector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otelcollector
+  template:
+    metadata:
+      labels:
+        app: otelcollector
+    spec:
+      containers:
+        - name: otelcollector
+          image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector:0.94.0
+          command:
+            - "/otelcol"
+            - "--config=/conf/config.yaml"
+          volumeMounts:
+            - name: config
+              mountPath: /conf/
+          ports:
+            - name: receiver
+              containerPort: 4317
+      volumes:
+        - name: config
+          configMap:
+            name: otelcollector-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otelcollector
+  namespace: ${TRAEFIK_NAMESPACE}
+spec:
+  ports:
+    - name: receiver
+      port: 4317
+      targetPort: receiver
+  selector:
+    app: otelcollector
