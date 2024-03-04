@@ -16,12 +16,25 @@ spec:
         app: traefik
     spec:
       serviceAccountName: traefik-account
+      initContainers:
+        - name: load-wasm-plugin
+          image: ${TRAEFIK_PLUGIN_IMAGE}
+          command: ["/bin/sh"]
+          args:
+            [
+              "-c",
+              "cp /coraza-http-wasm.wasm /plugins-local/src/github.com/jcchavezs/coraza-http-wasm-traefik/coraza-http-wasm.wasm",
+            ]
+          volumeMounts:
+            - name: wasm-plugin
+              mountPath: /plugins-local/src/github.com/jcchavezs/coraza-http-wasm-traefik
       containers:
         - name: traefik
           image: traefik:v3.0.0-rc1
           args:
             - --api.insecure
             - --providers.kubernetesingress
+            - --providers.file.filename=/config/config.yaml
 
             # Enable tracing
             - --tracing=true
@@ -30,6 +43,7 @@ spec:
             - --tracing.otlp.grpc=true
             - --tracing.otlp.grpc.endpoint=otelcollector:4317
             - --tracing.otlp.grpc.insecure=true
+            - --experimental.localPlugins.coraza.moduleName=github.com/jcchavezs/coraza-http-wasm-traefik
           ports:
             - name: web
               containerPort: 80
@@ -37,6 +51,23 @@ spec:
             - name: dashboard
               containerPort: 8080
               hostPort: 8080
+          volumeMounts:
+            - mountPath: /config
+              name: config
+            - mountPath: /plugins-local/src/github.com/jcchavezs/coraza-http-wasm-traefik
+              name: wasm-plugin
+            - mountPath: /plugins-local/src/github.com/jcchavezs/coraza-http-wasm-traefik/.traefik.yml
+              name: wasm-plugin-manifest
+              subPath: .traefik.yml
+      volumes:
+        - name: config
+          configMap:
+            name: config
+        - name: wasm-plugin-manifest
+          configMap:
+            name: wasm-plugin-manifest
+        - name: wasm-plugin
+          emptyDir: {}
       nodeSelector:
         ingress-ready: "true"
       tolerations:

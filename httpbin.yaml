@@ -40,6 +40,8 @@ kind: Ingress
 metadata:
   name: httpbin-ingress
   namespace: ${APP_NAMESPACE}
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: waf@file
 spec:
   rules:
     - http:

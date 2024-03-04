@@ -12,10 +12,47 @@ Once the cluster is ready we will deploy the applications by running `make deplo
 
 ```console
 # Successful request:
-curl http://localhost
+curl -i http://localhost
 ```
 
 Once you are done you can cleanup the environment running `make cleanup`.
+
+### WAF
+
+Coraza middleware has been enabled on httpbin ingress. The configuration for it is being declared in the [config middleware](./traefik/configmap.yaml). A call to `/headers` will be matched as per the rules but no rules:
+
+```console
+# Successful request:
+curl -i http://localhost/headers
+```
+
+We can update the config map with the rules to enable blocking:
+
+```console
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config
+  namespace: traefik
+data:
+  config.yaml: |
+    http:
+      middlewares:
+        waf:
+          plugin:
+            coraza:
+              directives:
+                - SecRuleEngine On
+                - SecDebugLog /dev/stdout
+                - SecDebugLogLevel 9
+                - SecRule REQUEST_URI "@streq /headers" "id:101,phase:1,log,deny,status:403"
+```
+
+```console
+# Denied request:
+curl -i http://localhost/headers
+```
 
 ## Requirements
 
