@@ -51,7 +51,11 @@ data:
 
 ```console
 # Denied request:
+<<<<<<< HEAD
 curl -i http://localhost/headers
+=======
+curl http://localhost/headers
+>>>>>>> 11f40a7 (chore: use /headers for blocking.)
 ```
 
 ## Requirements
