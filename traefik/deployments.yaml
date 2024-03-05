@@ -5,7 +5,6 @@ metadata:
   namespace: ${TRAEFIK_NAMESPACE}
   labels:
     app: traefik
-
 spec:
   replicas: 1
   selector:
@@ -23,6 +22,7 @@ spec:
           args:
             - --api.insecure
             - --providers.kubernetesingress
+
             # Enable tracing
             - --tracing=true
             - --tracing.serviceName=traefik

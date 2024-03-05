@@ -6,14 +6,13 @@ The manifests for traefik are mainly inspired in [this guide](https://doc.traefi
 
 ## Getting started
 
-Just run `make build` and then you will be able to access the dashboard through <http://localhost:8080> and do some curls to the sample app:
+First we will create a kind cluster by running `make build`.
+
+Once the cluster is ready we will deploy the applications by running `make deploy` and after that we will be able to access the dashboard through <http://localhost:8080> and do some curls to the sample app:
 
 ```console
 # Successful request:
 curl http://localhost
-
-# Denied request:
-curl http://localhost/status/403
 ```
 
 Once you are done you can cleanup the environment running `make cleanup`.
