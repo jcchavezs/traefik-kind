@@ -13,10 +13,10 @@ data:
           plugin:
             coraza:
               directives:
+                - Include @recommended-conf
+                - Include @crs-setup-conf
+                - Include @owasp_crs/*.conf
                 - SecRuleEngine DetectionOnly
-                - SecDebugLog /dev/stdout
-                - SecDebugLogLevel 9
-                - SecRule REQUEST_URI "@streq /headers" "id:101,phase:1,log,deny,status:403"
 ---
 apiVersion: v1
 kind: ConfigMap

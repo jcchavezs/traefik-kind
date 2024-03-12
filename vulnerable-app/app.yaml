@@ -1,44 +1,50 @@
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: httpbin
+  name: vulapp
   namespace: ${APP_NAMESPACE}
   labels:
-    app: httpbin
+    app: vulapp
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: httpbin
+      app: vulapp
   template:
     metadata:
       labels:
-        app: httpbin
+        app: vulapp
     spec:
       containers:
-        - name: httpbin
-          image: mccutchen/go-httpbin
+        - name: vulapp
+          image: ${LOG4SHELL_VULNERABLE_IMAGE}
+          imagePullPolicy: Always
           ports:
             - name: web
               containerPort: 8080
+            - name: ldap
+              containerPort: 1389
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: httpbin
+  name: vulapp
   namespace: ${APP_NAMESPACE}
 spec:
   ports:
     - name: web
       port: 8080
       targetPort: web
+    - name: ldap
+      port: 1389
+      targetPort: ldap
   selector:
-    app: httpbin
+    app: vulapp
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: httpbin-ingress
+  name: vulapp-ingress
   namespace: ${APP_NAMESPACE}
   annotations:
     traefik.ingress.kubernetes.io/router.middlewares: waf@file
@@ -46,10 +52,10 @@ spec:
   rules:
     - http:
         paths:
-          - path: /anything
+          - path: /
             pathType: Exact
             backend:
               service:
-                name: httpbin
+                name: vulapp
                 port:
                   name: web

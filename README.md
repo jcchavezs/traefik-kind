@@ -12,21 +12,20 @@ Once the cluster is ready we will deploy the applications by running `make deplo
 
 ```console
 # Successful request:
-curl -i http://localhost
+curl -i http://localhost/anything
 ```
 
 Once you are done you can cleanup the environment running `make cleanup`.
 
 ### WAF
 
-Coraza middleware has been enabled on httpbin ingress. The configuration for it is being declared in the [config middleware](./traefik/configmap.yaml). A call to `/headers` will be matched as per the rules but no rules:
+Coraza middleware has been enabled on httpbin ingress. The configuration for it is being declared in the [config middleware](./traefik/configmap.yaml). A call to `/anything` will succeed:
 
 ```console
-# Successful request:
-curl -i http://localhost/headers
+curl -i http://localhost/anything
 ```
 
-We can update the config map with the rules to enable blocking:
+We can update the config map with the rules to enable blocking in order to attempt a XSS attack:
 
 ```console
 cat <<EOF | kubectl apply -f -
@@ -43,19 +42,16 @@ data:
           plugin:
             coraza:
               directives:
+                - Include @recommended-conf
+                - Include @crs-setup-conf
+                - Include @owasp_crs/*.conf
                 - SecRuleEngine On
-                - SecDebugLog /dev/stdout
-                - SecDebugLogLevel 9
-                - SecRule REQUEST_URI "@streq /headers" "id:101,phase:1,log,deny,status:403"
+EOF
 ```
 
 ```console
 # Denied request:
-<<<<<<< HEAD
-curl -i http://localhost/headers
-=======
-curl http://localhost/headers
->>>>>>> 11f40a7 (chore: use /headers for blocking.)
+curl -i http://localhost/anything?id=1%20OR%201=1
 ```
 
 ## Requirements

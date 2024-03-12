@@ -17,13 +17,22 @@ build-plugin-image:
 	@docker build --load -t $(TRAEFIK_PLUGIN_IMAGE) ./localplugin
 	@kind load docker-image $(TRAEFIK_PLUGIN_IMAGE) --name ${CLUSTER_NAME}
 
-.PHONY: deploy
 # deploy deploys traefik and the app
-deploy:
+deploy-all: deploy-traefik deploy-httpbin
+
+deploy-traefik:
 	@TRAEFIK_NAMESPACE=$(TRAEFIK_NAMESPACE) \
 	APP_NAMESPACE=$(APP_NAMESPACE) \
 	TRAEFIK_PLUGIN_IMAGE=$(TRAEFIK_PLUGIN_IMAGE) \
-	./deploy.sh
+	./deploy-traefik.sh
+
+deploy-httpbin:
+	@APP_NAMESPACE=$(APP_NAMESPACE) \
+	envsubst < httpbin.yaml | kubectl apply -f -
+
+undeploy-httpbin:
+	@APP_NAMESPACE=$(APP_NAMESPACE) \
+	envsubst < httpbin.yaml | kubectl delete -f -
 
 .PHONY: cleanup
 # cleanup deletes the kind cluster
