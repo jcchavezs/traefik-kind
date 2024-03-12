@@ -54,6 +54,8 @@ EOF
 curl -i http://localhost/anything?id=1%20OR%201=1
 ```
 
+**We can also see the log4shell mitigation in action [here](./vulnerable-app/)**
+
 ## Requirements
 
 - kind
